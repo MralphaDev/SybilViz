@@ -2,7 +2,7 @@
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-def run_dbscan_on_clusters(nodes, clusters, similarities, min_samples=3, similarity_threshold=0.8):
+def run_dbscan_on_clusters(nodes, clusters, similarities, min_samples=3, similarity_threshold=0.9):
     """
     对每个 cluster 内基于 weighted similarity 做精细 DBSCAN，只聚合 similarity >= similarity_threshold 的钱包。
     - similarities: dict "walletA-walletB" -> similarity

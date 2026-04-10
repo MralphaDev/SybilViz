@@ -16,6 +16,10 @@ from behv_analysis import behavior_sim, variant_similarity, wallet_behavior_simi
 from entity_identification.syb_entity_id import identify_sybil_entities
 from itertools import combinations
 
+# ---------- 新增: 找同方向 wallets ----------
+from sklearn.preprocessing import normalize
+from sklearn.metrics.pairwise import cosine_similarity
+
 # ---------- FastAPI ----------
 app = FastAPI()
 
@@ -122,7 +126,56 @@ num_clusters = len(clusters)
 #print(f"Total ICCs found: {num_clusters}")
 '''for i, cluster in enumerate(clusters):
     print(f"Cluster {i+1}: {cluster}")'''
+    
+def find_same_direction_wallets_in_cluster(nodes_map, cluster_wallets, similarity_threshold=0.99):
+    # 只取 nodes_map 中存在的 wallet
+    valid_wallets = [w for w in cluster_wallets if w in nodes_map]
+    vectors = np.array([nodes_map[w]["behavior_vector"] for w in valid_wallets], dtype=float)
 
+    if len(vectors) < 2:
+        return []
+
+    vectors_norm = normalize(vectors, norm='l2')
+    cos_sim_matrix = cosine_similarity(vectors_norm)
+
+    n = len(valid_wallets)
+    selected_wallets = []
+    for i in range(n):
+        wallet_i = valid_wallets[i]
+        is_good = True
+        for j in range(n):
+            if i == j:
+                continue
+            if cos_sim_matrix[i, j] < similarity_threshold:
+                is_good = False
+                break
+        if is_good:
+            selected_wallets.append(wallet_i)
+
+    return selected_wallets
+
+    vectors = np.array([nodes_map[w]["behavior_vector"] for w in cluster_wallets if w in nodes_map], dtype=float)
+    if len(vectors) < 2:
+        return []
+
+    vectors_norm = normalize(vectors, norm='l2')
+    cos_sim_matrix = cosine_similarity(vectors_norm)
+
+    n = len(cluster_wallets)
+    selected_wallets = []
+    for i in range(n):
+        wallet_i = cluster_wallets[i]
+        is_good = True
+        for j in range(n):
+            if i == j:
+                continue
+            if cos_sim_matrix[i, j] < similarity_threshold:
+                is_good = False
+                break
+        if is_good:
+            selected_wallets.append(wallet_i)
+
+    return selected_wallets
 # ---------- Similarities ----------
 similarities = analyze_similarity(nodes)
 
@@ -190,97 +243,17 @@ def get_graph():
 
             }
 
-        # ----------------------
-        # 计算 cluster 内所有 subg 对的距离（四类）
-        subg_labels = list(cluster_output["subgroups"].keys())
-        subgroup_distances = {
-            "composite": {},
-            "time": {},
-            "tx": {},
-            "fund": {},
-            "variant": {}
-        }
-
-        for sg1, sg2 in combinations(subg_labels, 2):
-            wallets1 = subg_vectors_map[c_idx][sg1]["wallets"]
-            wallets2 = subg_vectors_map[c_idx][sg2]["wallets"]
-            if not wallets1 or not wallets2:
-                continue
-
-            comp_sims = []
-            time_dists = []
-            tx_dists = []
-            amt_dists = []
-            variant_dists = []
-
-            for w1 in wallets1:
-                for w2 in wallets2:
-                    comp_sim = wallet_behavior_similarity(nodes_map[w1], nodes_map[w2], variant_weight=0.5)
-                    comp_sims.append(comp_sim)
-
-                    time_dists.append(time_distance(nodes_map[w1], nodes_map[w2]))
-                    tx_dists.append(tx_distance(nodes_map[w1], nodes_map[w2]))
-                    amt_dists.append(amt_distance(nodes_map[w1], nodes_map[w2]))
-                    variant_dists.append(1 - variant_similarity(nodes_map[w1], nodes_map[w2]))
-
-            avg_comp = 1.0 - float(np.mean(comp_sims)) if comp_sims else 0.0
-            avg_time = float(np.mean(time_dists)) if time_dists else 0.0
-            avg_tx = float(np.mean(tx_dists)) if tx_dists else 0.0
-            avg_amt = float(np.mean(amt_dists)) if amt_dists else 0.0
-            avg_variant = float(np.mean(variant_dists)) if variant_dists else 0.0
-
-            key = f"{sg1}-{sg2}"
-            subgroup_distances["composite"][key] = avg_comp
-            subgroup_distances["time"][key] = avg_time
-            subgroup_distances["tx"][key] = avg_tx
-            subgroup_distances["fund"][key] = avg_amt
-            subgroup_distances["variant"][key] = avg_variant
-
-        # ✅ 必须在 loop 外
-        subg_vectors_map[c_idx]["subgroup_distances"] = subgroup_distances
-
-        # ----------------------
-        # ✅ 正确计算每个 subgroup 的 average（论文表格）
-        subg_avg_metrics = {}
-
-        for sg in subg_labels:
-            comp_vals = []
-            time_vals = []
-            tx_vals = []
-            fund_vals = []
-            variant_vals = []
-
-            for other in subg_labels:
-                if sg == other:
-                    continue
-
-                key1 = f"{sg}-{other}"
-                key2 = f"{other}-{sg}"
-                key = key1 if key1 in subgroup_distances["composite"] else key2
-
-                if key not in subgroup_distances["composite"]:
-                    continue
-
-                comp_vals.append(subgroup_distances["composite"][key])
-                time_vals.append(subgroup_distances["time"][key])
-                tx_vals.append(subgroup_distances["tx"][key])
-                fund_vals.append(subgroup_distances["fund"][key])
-                variant_vals.append(subgroup_distances["variant"][key])
-
-            subg_avg_metrics[sg] = {
-                "composite": float(np.mean(comp_vals)) if comp_vals else 0.0,
-                #"time": float(np.mean(time_vals)) if time_vals else 0.0,
-                #"tx": float(np.mean(tx_vals)) if tx_vals else 0.0,
-                #"fund": float(np.mean(fund_vals)) if fund_vals else 0.0,
-                #"variant": float(np.mean(variant_vals)) if variant_vals else 0.0,
-            }
-
-        subg_vectors_map[c_idx]["subgroup_avg"] = subg_avg_metrics
+       
 
         # ----------------------
         # 移除临时 wallets 字段
         for sg_label in cluster_output["subgroups"].keys():
             subg_vectors_map[c_idx][sg_label].pop("wallets", None)
+        
+        for sg_label in cluster_output["subgroups"].keys():
+            subg_vectors_map[c_idx][sg_label].pop("variants", None)
+            subg_vectors_map[c_idx][sg_label].pop("vectors", None)
+            subg_vectors_map[c_idx][sg_label].pop("fund", None)
 
     # Identify sybil entities
     sybil_entities, global_result, aggregated_relations = identify_sybil_entities(
@@ -292,16 +265,26 @@ def get_graph():
         min_samples=2,
         global_dbscan=True
     )
+    
+    
+    
+        # 找每个 cluster 内同方向钱包
+    same_direction_map = {}
+    for c_idx, cluster_wallets in enumerate(clusters):
+        same_dir_wallets = find_same_direction_wallets_in_cluster(nodes_map, cluster_wallets, similarity_threshold=0.99)
+        if same_dir_wallets:
+            same_direction_map[c_idx] = same_dir_wallets
 
     return {
         "nodes": nodes,
         "edges": edges,
         "clusters": clusters,
         "num_clusters": num_clusters,
-        #"similarities": similarities,
+        "similarities": similarities,
         "dbscan": api_dbscan,
-        "sybil_entities": sybil_entities,
-        "global_result": global_result,
-        "aggregated_relations": aggregated_relations,
-        "subg_vectors": subg_vectors_map,
+        #"sybil_entities": sybil_entities,
+        #"global_result": global_result,
+        #"aggregated_relations": aggregated_relations,
+        #"subg_vectors": subg_vectors_map,
+        "same_direction_wallets": same_direction_map,  # <--- 新增字段
     }
