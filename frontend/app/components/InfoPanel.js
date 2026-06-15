@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 //import { Tooltip } from "@material-tailwind/react"; // 可选 tooltip 库
+import NoisePanel from "./noisePanel";
 
-export default function InfoPanel({ selected, clusters ,similarities,dbscan,setHighlightNodes,sybil_entities, aggregated_relations}) {
+export default function InfoPanel({ selected, clusters ,similarities,dbscan,setHighlightNodes,sybil_entities, aggregated_relations, noiseAnalysis }) {
 
   const [page, setPage] = useState(0);
   const [activeCluster, setActiveCluster] = useState(null);
@@ -14,8 +15,13 @@ export default function InfoPanel({ selected, clusters ,similarities,dbscan,setH
   const [open, setOpen] = useState(false);
   const [showAggregated, setShowAggregated] = useState(false);
 
+  const [selectedNoise, setSelectedNoise] = useState(null);
+
+
     const clustersPerPage = 2;
   const totalPages = Math.ceil(clusters?.length / clustersPerPage || 1);
+
+  
 
   const displayedClusters = clusters?.slice(
     page * clustersPerPage,
@@ -239,9 +245,9 @@ const safeAggregated = Array.isArray(aggregated_relations)
                                     </div>
                                   )}
 
-                                  <div className="mt-1 flex flex-wrap gap-1">
+                                  {/*<div className="mt-1 flex flex-wrap gap-1">
                                     <span className="text-gray-400 text-xs italic w-full">
-                                      Recovered Noise:
+                                       Noise Interpretation:
                                     </span>
 
                                     {sybil_entities[clusterId]?.recovered_noise?.length > 0 ? (
@@ -256,43 +262,17 @@ const safeAggregated = Array.isArray(aggregated_relations)
                                     ) : (
                                       <span className="text-gray-500 text-xs italic">None</span>
                                     )}
-                                  </div>
+                                  </div>*/}
                                   
                                 </motion.div>
                               );
                             })}
-
-                          {noise.length > 0 && (
-                            <motion.div
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: funders.length * 0.1 }}
-                              className="p-3 bg-gray-800 rounded-lg shadow-inner border-l-4 border-orange-500"
-                            >
-                              <p className="text-orange-300 font-semibold">
-                                Isolated / Noise Accounts:
-                              </p>
-                              <ul className="mt-1 flex flex-wrap gap-1">
-                                {noise.slice(0, 5).map((n, i) => (
-                                  <li
-                                    key={i}
-                                    className="bg-orange-600/70 text-white px-2 py-1 rounded-full text-xs truncate max-w-[120px]"
-                                    title={n}
-                                  >
-                                    {n}
-                                  </li>
-                                ))}
-                                {noise.length > 5 && (
-                                  <span className="text-gray-400 text-xs ml-2">
-                                    +{noise.length - 5} more
-                                  </span>
-                                )}
-                              </ul>
-                              <p className="mt-1 text-gray-400 text-xs italic">
-                                Total isolated accounts: {noise.length}
-                              </p>
-                            </motion.div>
-                          )}
+                          {/* 噪声账户 */}
+                          <NoisePanel
+                            noise={clusterData?.noise}
+                            noiseAnalysis={noiseAnalysis}
+                            funders={funders}
+                          />
                         </div>
                       );
                     }

@@ -30,6 +30,9 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+print("first time to code with gemini copilot")
+
+
 # ---------- 配置 ----------
 BASE_DIR = Path(__file__).resolve().parent
 CSV_FOLDER = BASE_DIR / "wallets"
@@ -256,7 +259,7 @@ def get_graph():
             subg_vectors_map[c_idx][sg_label].pop("fund", None)
 
     # Identify sybil entities
-    sybil_entities, global_result, aggregated_relations = identify_sybil_entities(
+    sybil_entities = identify_sybil_entities(
         api_dbscan,
         nodes,
         edges,
@@ -282,9 +285,9 @@ def get_graph():
         "num_clusters": num_clusters,
         "similarities": similarities,
         "dbscan": api_dbscan,
-        #"sybil_entities": sybil_entities,
+        "sybil_entities": sybil_entities,
         #"global_result": global_result,
         #"aggregated_relations": aggregated_relations,
         #"subg_vectors": subg_vectors_map,
-        "same_direction_wallets": same_direction_map,  # <--- 新增字段
+        #"same_direction_wallets": same_direction_map,  # <--- 新增字段
     }

@@ -381,11 +381,11 @@ const labeledVector = selected?.data?.behavior_vector.map(
             }}
           >
             <p style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: "#aaa" }}>
-              {type === "weighted" ? "Weighted Similarity (≥90%)" : type.charAt(0).toUpperCase() + type.slice(1)}
+              {type === "weighted" ? "Weighted Similarity (≥80%)" : type.charAt(0).toUpperCase() + type.slice(1)}
             </p>
             <ul style={{ paddingLeft: 16, fontSize: 11, margin: 0 }}>
               {Object.entries(similarities[type])
-                .filter(([key, sim]) => key.includes(selected.data.id) && (type !== "weighted" || sim >= 0.90))
+                .filter(([key, sim]) => key.includes(selected.data.id) && (type !== "weighted" || sim >= 0.70))
                 .sort((a, b) => b[1] - a[1])
                 .map(([key, sim]) => {
                   const other = key.replace(selected.data.id, "").replace("-", "").replace(",", "");

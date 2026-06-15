@@ -1,0 +1,2 @@
+Transaction Hash,Status,Type,Method,Block,DateTime (UTC),From,From_Nametag,To,To_Nametag,Amount,Value (USD),Asset,Txn Fee
+0xe76172da6ddfd4f336e99eb5945a758284c9d86bd50d5d17e36da66c286f3b65,Success,Tx,Transfer,49374693,2025/5/9 15:40,0x5AB6FA335320bC882254835472999c9e25EafE28,,0x3E1217379Bb7e8653032883eBd063f03EEdA1bfE,,0.007,$6.27,BNB,0.0000021

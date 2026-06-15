@@ -8,11 +8,12 @@ import ClustersView from "./components/clustersView";
 import WalletVerifier from "./components/wallet_verifier";
 
 export default function Home() {
-  const { nodes, edges, clusters, similarities, dbscan, sybil_entities, aggregated_relations } = useGraph();
+  const { nodes, edges, clusters, similarities, dbscan, sybil_entities, aggregated_relations, noiseAnalysis } = useGraph();
   const [selected, setSelected] = useState(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [highlightNodes, setHighlightNodes] = useState(null); // Set of wallet ids 闪烁节点
   const [mounted, setMounted] = useState(false);
+  
 
   useEffect(() => {
     setMounted(true);
@@ -228,6 +229,7 @@ export default function Home() {
           sybil_entities={sybil_entities}
           aggregated_relations={aggregated_relations}
           setHighlightNodes={setHighlightNodes}
+          noiseAnalysis={noiseAnalysis}
         />
       )}
     </div>
